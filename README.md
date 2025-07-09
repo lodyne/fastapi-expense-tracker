@@ -12,6 +12,7 @@ A FastAPI-based backend for tracking expenses and managing budgets, using MongoD
 
 ## Project Structure
 
+```text
 fastapi-expense-tracker/
 ├── src/
 │   ├── app/
@@ -23,6 +24,7 @@ fastapi-expense-tracker/
 ├── .env
 ├── .gitignore
 └── README.md
+```
 
 ## Setup
 
