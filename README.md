@@ -89,4 +89,4 @@ MIT License
 ---
 
 **Author:** Lodger Mtui  
-**Contact:**
+**Contact:** <lodgmtui@gmail.com>
