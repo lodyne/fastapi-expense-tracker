@@ -2,21 +2,22 @@ from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status
 
 from app.models import Budget, Category, Expense
-from app.schema import BudgetIn, CategoryIn, ExpenseIn, ExpenseOut
+from app.schema import BudgetIn, BudgetOut, CategoryIn, CategoryOut, ExpenseIn
+from src.app.exceptions import NotFoundException
 
 router = APIRouter()
-
 
 @router.get(
     "/expenses",
     name="get_expenses",
     tags=["expenses"],
     status_code=status.HTTP_200_OK,
-    response_model=list[ExpenseOut],
+    response_model=list[Expense], 
+    response_description="List of all expenses",
     summary="Get all expenses",
     description="Retrieve a list of all expenses stored in the database.",
 )
-async def get_expenses():
+async def get_expenses() -> list[Expense]:
     """
     Retrieve all expenses.
 
@@ -24,8 +25,9 @@ async def get_expenses():
         List[Expense]: A list of all expense objects.
     """
     expenses = await Expense.find_all(fetch_links=True).to_list()
-    return expenses
 
+    return expenses
+    
 
 @router.get(
     "/expenses/{expense_id}",
@@ -49,9 +51,9 @@ async def get_expense(expense_id: PydanticObjectId):
     Raises:
         HTTPException: If the expense is not found (404).
     """
-    expense = await Expense.get(expense_id)
+    expense = await Expense.get(expense_id, fetch_links=True)
     if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+        raise NotFoundException({"message": "Expense not found", "code": 404})
     return expense
 
 
@@ -76,6 +78,61 @@ async def create_expense(expense_in: ExpenseIn):
     """
     expense = Expense(**expense_in.model_dump())
     await expense.insert()
+    return expense
+
+@router.delete(
+    "/expenses/{expense_id}",
+    name="delete_expense",
+    tags=["expenses"],
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an expense",
+    description="Delete a specific expense by its unique ID."
+)
+async def delete_expense(expense_id: PydanticObjectId):
+    """
+    Delete a specific expense by ID.
+
+    Args:
+        expense_id (PydanticObjectId): The unique identifier of the expense.
+
+    Raises:
+        HTTPException: If the expense is not found (404).
+    """
+    expense = await Expense.get(expense_id)
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    await expense.delete()
+    
+@router.patch(
+    "/expenses/{expense_id}",
+    name="update_expense",
+    tags=["expenses"],
+    status_code=status.HTTP_200_OK,
+    response_model=Expense,
+    summary="Update an expense",
+    description="Update an existing expense by its unique ID."
+)
+async def update_expense(expense_id: PydanticObjectId, expense_in: ExpenseIn):
+    """
+    Update an existing expense by ID.
+    Args:
+        expense_id (PydanticObjectId): The unique identifier of the expense.
+        expense_in (ExpenseIn): The updated expense data.
+    Returns:
+        Expense: The updated expense object.
+    Raises:
+        HTTPException: If the expense is not found (404).
+    """
+    expense = await Expense.get(expense_id)
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    expense.name = expense_in.name
+    expense.amount = expense_in.amount
+    expense.category = expense_in.category
+    expense.budget = expense_in.budget
+    await expense.save()
+    
     return expense
 
 @router.post(
@@ -106,7 +163,7 @@ async def create_category(category_in: CategoryIn):
     name="get_categories",
     tags=["categories"],
     status_code=status.HTTP_200_OK,
-    response_model=list[Category],
+    response_model=list[CategoryOut],
     summary="Get all categories",
     description="Retrieve a list of all categories stored in the database."
 )
@@ -119,29 +176,6 @@ async def get_categories():
     """
     categories = await Category.find_all().to_list()
     return categories
-
-@router.delete(
-    "/expenses/{expense_id}",
-    name="delete_expense",
-    tags=["expenses"],
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete an expense",
-    description="Delete a specific expense by its unique ID."
-)
-async def delete_expense(expense_id: PydanticObjectId):
-    """
-    Delete a specific expense by ID.
-
-    Args:
-        expense_id (PydanticObjectId): The unique identifier of the expense.
-
-    Raises:
-        HTTPException: If the expense is not found (404).
-    """
-    expense = await Expense.get(expense_id)
-    if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    await expense.delete()
 
 @router.post(
     "/budgets",
@@ -171,7 +205,7 @@ async def create_budget(budget_in: BudgetIn):
     name="get_budgets",
     tags=["budgets"],
     status_code=status.HTTP_200_OK,
-    response_model=list[Budget],
+    response_model=list[BudgetOut],
     summary="Get all budgets",
     description="Retrieve a list of all budgets stored in the database."
 )
@@ -184,6 +218,34 @@ async def get_budgets():
     """
     budgets = await Budget.find_all().to_list()
     return budgets
+
+@router.get(
+    "/budgets/{budget_id}",
+    name="get_budget",
+    tags=["budgets"],
+    status_code=status.HTTP_200_OK,
+    response_model=BudgetOut,
+    summary="Get a specific budget",
+    description="Retrieve a specific budget by its unique ID."  
+    )
+
+async def get_budget(budget_id: PydanticObjectId):
+    """
+    Retrieve a specific budget by ID.
+
+    Args:
+        budget_id (PydanticObjectId): The unique identifier of the budget.
+
+    Returns:
+        Budget: The budget object if found.
+
+    Raises:
+        HTTPException: If the budget is not found (404).
+    """
+    budget = await Budget.get(budget_id)
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return budget
 
 @router.patch(
     "/budgets/{budget_id}",
