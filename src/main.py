@@ -6,9 +6,9 @@ lifespan for database initialization, and includes the API routes.
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-
 from app.database import init_db
 from app.routes import router
+from app.utils import cors_config
 
 
 @asynccontextmanager
@@ -42,6 +42,7 @@ app = FastAPI(
     description_format="{description} - {contact[name]} ({contact[email]})",
 )
 
+cors_config(app)  # Configure CORS settings
 
 @app.get("/")
 async def root():
