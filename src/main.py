@@ -6,9 +6,9 @@ lifespan for database initialization, and includes the API routes.
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.database import init_db
-from app.routes import router
-from app.utils import cors_config
+from src.app.database import init_db
+from src.app.routes import router
+from src.app.utils import cors_config
 
 
 @asynccontextmanager

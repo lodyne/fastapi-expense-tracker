@@ -1,8 +1,8 @@
 from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status
 
-from app.models import Budget, Category, Expense
-from app.schema import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn
+from src.app.models import Budget, Category, Expense
+from src.app.schema import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn
 from src.app.exceptions import NotFoundException
 
 router = APIRouter()

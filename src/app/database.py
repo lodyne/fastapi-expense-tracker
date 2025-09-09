@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
 
-from app.models import Budget, Category, Expense
+from src.app.models import Budget, Category, Expense
 
 # Load environment variables from .env file
 load_dotenv()  # Loads variables from .env into environment
