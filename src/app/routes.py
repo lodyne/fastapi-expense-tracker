@@ -2,7 +2,7 @@ from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status
 
 from app.models import Budget, Category, Expense
-from app.schema import BudgetIn, BudgetOut, CategoryIn, CategoryOut, ExpenseIn
+from app.schema import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn
 from src.app.exceptions import NotFoundException
 
 router = APIRouter()
@@ -140,7 +140,7 @@ async def update_expense(expense_id: PydanticObjectId, expense_in: ExpenseIn):
     name="create_category",
     tags=["categories"],
     status_code=status.HTTP_201_CREATED,
-    response_model=Category,
+    response_model=CategoryOut,
     summary="Create a new category",
     description="Create and store a new category in the database."
 )
@@ -163,7 +163,7 @@ async def create_category(category_in: CategoryIn):
     name="get_categories",
     tags=["categories"],
     status_code=status.HTTP_200_OK,
-    response_model=list[CategoryOut],
+    response_model=CategoriesOut,
     summary="Get all categories",
     description="Retrieve a list of all categories stored in the database."
 )
@@ -175,7 +175,7 @@ async def get_categories():
         List[Category]: A list of all category objects.
     """
     categories = await Category.find_all().to_list()
-    return categories
+    return {"categories":categories}
 
 @router.post(
     "/budgets",

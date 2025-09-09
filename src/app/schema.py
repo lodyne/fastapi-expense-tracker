@@ -64,6 +64,10 @@ class CategoryOut(BaseModel):
         Allows the use of alias for the _id field.
         """
         validate_by_name = True
+        
+
+class CategoriesOut(BaseModel):
+    categories: list[CategoryOut]
 
 class BudgetOut(BaseModel):
     """
