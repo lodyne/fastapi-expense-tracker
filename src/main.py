@@ -6,10 +6,11 @@ lifespan for database initialization, and includes the API routes.
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from src.app.database import init_db
-from src.app.routes import router
-from src.app.utils import cors_config
+from src.app.database.mongo import init_db
+from src.app.routes.mongo import router as mongo_router
+# from src.app.routes.postgres import router as postgres_router
 
+from src.app.utils import cors_config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,4 +56,5 @@ async def root():
     return {"message": "Hello, World!"}
 
 
-app.include_router(router)
+app.include_router(mongo_router)
+# app.include_router(postgres_router)
