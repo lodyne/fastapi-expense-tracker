@@ -1,9 +1,23 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from src.app.database.postgres import SessionLocal
 from src.app.models.postgres import Budget, Category, Expense
-from src.app.schema.postgres import BudgetIn, BudgetOut, CategoryOut, CategoryIn, ExpenseIn, ExpenseOut
+from src.app.schema.postgres import (
+    BudgetIn,
+    BudgetOut,
+    CategoryOut,
+    CategoryIn,
+    ExpenseIn,
+    ExpenseOut,
+)
 from src.app.exceptions import NotFoundException
+from src.app.security.auth import (
+    authenticate_user,
+    create_token_for_user,
+    get_current_user,
+)
 
 router = APIRouter(prefix="/api/v1/postgres")
 
@@ -14,19 +28,45 @@ def get_db():
         yield db
     finally:
         db.close()
-        
+
+# Convenience alias for annotating the database dependency in route signatures.
+db_dependency = Annotated[Session, Depends(get_db)]
+
+@router.post(
+    "/auth/token",
+    name="login_access_token",
+    tags=["auth"],
+    summary="Obtain an access token",
+    description="Authenticate with username and password to receive a JWT access token.",
+)
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+):
+    if not authenticate_user(form_data.username, form_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_token_for_user(form_data.username)
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.get(
     "/expenses",
     name="get_expenses",
     tags=["expenses"],
     status_code=status.HTTP_200_OK,
-    response_model=list[ExpenseOut], 
+    response_model=list[ExpenseOut],
     response_description="List of all expenses",
     summary="Get all expenses",
     description="Retrieve a list of all expenses stored in the database.",
 )
-async def get_expenses(db: Session = Depends(get_db)) -> list[ExpenseOut]:
+async def get_expenses(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ExpenseOut]:
     """
     Retrieve all expenses.
 
@@ -36,18 +76,22 @@ async def get_expenses(db: Session = Depends(get_db)) -> list[ExpenseOut]:
     expenses = db.query(Expense).all()
 
     return expenses
-    
+
 
 @router.get(
     "/expenses/{expense_id}",
     name="get_expense",
     tags=["expenses"],
     status_code=status.HTTP_200_OK,
-    # response_model=ExpenseOut,
+    response_model=ExpenseOut,
     summary="Get a specific expense",
     description="Retrieve a specific expense by its unique ID.",
 )
-async def get_expense(expense_id: int , db: Session = Depends(get_db)):
+async def get_expense(
+    expense_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Retrieve a specific expense by ID.
 
@@ -61,7 +105,6 @@ async def get_expense(expense_id: int , db: Session = Depends(get_db)):
         HTTPException: If the expense is not found (404).
     """
     expense = db.query(Expense).filter(Expense.id == expense_id).first()
-    print("EXPENSEEEE", expense)
     if not expense:
         raise NotFoundException({"message": "Expense not found", "code": 404})
     return expense
@@ -76,7 +119,11 @@ async def get_expense(expense_id: int , db: Session = Depends(get_db)):
     summary="Create a new expense",
     description="Create and store a new expense in the database.",
 )
-async def create_expense(expense_in: ExpenseIn,db: Session = Depends(get_db)):
+async def create_expense(
+    expense_in: ExpenseIn,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Create a new expense.
 
@@ -91,33 +138,44 @@ async def create_expense(expense_in: ExpenseIn,db: Session = Depends(get_db)):
     db.commit()
     db.refresh(expense)
     return expense
-    
-    
 
-# @router.delete(
-#     "/expenses/{expense_id}",
-#     name="delete_expense",
-#     tags=["expenses"],
-#     status_code=status.HTTP_204_NO_CONTENT,
-#     summary="Delete an expense",
-#     description="Delete a specific expense by its unique ID."
-# )
-# async def delete_expense(expense_id: id, db: Session = Depends(get_db)):
-#     """
-#     Delete a specific expense by ID.
 
-#     Args:
-#         expense_id (id): The unique identifier of the expense.
+@router.delete(
+    "/expenses/{expense_id}",
+    name="delete_expense",
+    tags=["expenses"],
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an expense",
+    description="Delete a specific expense by its unique ID.",
+)
+async def delete_expense(
+    expense_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a specific expense by ID.
 
-#     Raises:
-#         HTTPException: If the expense is not found (404).
-#     """
-#     expense = db.delete(Expense).filter(Expense.id == expense_id)
-#     if not expense:
-#         raise NotFoundException({"message": "Expense not found", "code": 404})
-#     db.commit()
-#     return 0
-    
+    Args:
+        expense_id (id): The unique identifier of the expense.
+
+    Raises:
+        HTTPException: If the expense is not found (404).
+    """
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        raise NotFoundException({"message": "Expense not found", "code": 404})
+
+    if expense.user_id != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this expense",
+        )
+
+    db.delete(expense)
+    db.commit()
+
+
 # @router.patch(
 #     "/expenses/{expense_id}",
 #     name="update_expense",
@@ -141,14 +199,15 @@ async def create_expense(expense_in: ExpenseIn,db: Session = Depends(get_db)):
 #     expense = db.query.Expense.filter(Expense.id == expense_id).first()
 #     if not expense:
 #         raise NotFoundException({"message": "Expense not found", "code": 404})
-    
+
 #     expense.name = expense_in.name
 #     expense.amount = expense_in.amount
 #     expense.category_id = expense_in.category
 #     expense.budget_id = expense_in.budget
 #     db.commit()
-#     db.refresh(expense) 
+#     db.refresh(expense)
 #     return expense
+
 
 @router.post(
     "/categories",
@@ -157,9 +216,13 @@ async def create_expense(expense_in: ExpenseIn,db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     response_model=CategoryOut,
     summary="Create a new category",
-    description="Create and store a new category in the database."
+    description="Create and store a new category in the database.",
 )
-async def create_category(category_in: CategoryIn, db: Session = Depends(get_db)):
+async def create_category(
+    category_in: CategoryIn,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Create a new category.
 
@@ -168,14 +231,15 @@ async def create_category(category_in: CategoryIn, db: Session = Depends(get_db)
 
     Returns:
         Category: The created category object.
-        
+
     """
-    
+
     category = Category(**category_in.model_dump())
     db.add(category)
     db.commit()
     db.refresh(category)
     return category
+
 
 @router.get(
     "/categories",
@@ -184,9 +248,12 @@ async def create_category(category_in: CategoryIn, db: Session = Depends(get_db)
     status_code=status.HTTP_200_OK,
     response_model=list[CategoryOut],
     summary="Get all categories",
-    description="Retrieve a list of all categories stored in the database."
+    description="Retrieve a list of all categories stored in the database.",
 )
-async def get_categories(db: Session = Depends(get_db)) :
+async def get_categories(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Retrieve all categories.
 
@@ -196,6 +263,31 @@ async def get_categories(db: Session = Depends(get_db)) :
     categories = db.query(Category).all()
     return categories
 
+@router.get(
+    "/categories/{category_id}",
+    name="get_category",
+    tags=["categories"],
+    status_code=status.HTTP_200_OK,
+    response_model=list[CategoryOut],
+    summary="Get specific category",
+    description="Retrieve a specific category stored in the database.",
+)
+async def get_category(
+    category_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve all categories.
+
+    Returns:
+        Category: A list of all category objects.
+    """
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        raise NotFoundException({"message": "Category not found", "code": 404})
+    return category
+
 
 @router.post(
     "/budgets",
@@ -204,9 +296,13 @@ async def get_categories(db: Session = Depends(get_db)) :
     status_code=status.HTTP_201_CREATED,
     response_model=BudgetOut,
     summary="Create a new budget",
-    description="Create and store a new budget in the database."
+    description="Create and store a new budget in the database.",
 )
-async def create_budget(budget_in: BudgetIn, db: Session = Depends(get_db)):
+async def create_budget(
+    budget_in: BudgetIn,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Create a new budget.
 
@@ -222,6 +318,7 @@ async def create_budget(budget_in: BudgetIn, db: Session = Depends(get_db)):
     db.refresh(budget)
     return budget
 
+
 @router.get(
     "/budgets",
     name="get_budgets",
@@ -229,9 +326,12 @@ async def create_budget(budget_in: BudgetIn, db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     response_model=list[BudgetOut],
     summary="Get all budgets",
-    description="Retrieve a list of all budgets stored in the database."
+    description="Retrieve a list of all budgets stored in the database.",
 )
-async def get_budgets(db: Session = Depends(get_db)):
+async def get_budgets(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Retrieve all budgets.
 
@@ -241,33 +341,43 @@ async def get_budgets(db: Session = Depends(get_db)):
     budgets = db.query(Budget).all()
     return budgets
 
-# @router.get(
-#     "/budgets/{budget_id}",
-#     name="get_budget",
-#     tags=["budgets"],
-#     status_code=status.HTTP_200_OK,
-#     response_model=BudgetOut,
-#     summary="Get a specific budget",
-#     description="Retrieve a specific budget by its unique ID."  
-#     )
 
-# async def get_budget(budget_id: id, db: Session = Depends(get_db)):
-#     """
-#     Retrieve a specific budget by ID.
+@router.get(
+    "/budgets/{budget_id}",
+    name="get_budget",
+    tags=["budgets"],
+    status_code=status.HTTP_200_OK,
+    response_model=BudgetOut,
+    summary="Get a specific budget",
+    description="Retrieve a specific budget by its unique ID.",
+)
+async def get_budget(
+    budget_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve a specific budget by ID.
 
-#     Args:
-#         budget_id (id): The unique identifier of the budget.
+    Args:
+        budget_id (id): The unique identifier of the budget.
 
-#     Returns:
-#         Budget: The budget object if found.
+    Returns:
+        Budget: The budget object if found.
 
-#     Raises:
-#         HTTPException: If the budget is not found (404).
-#     """
-#     budget = db.query.Budget.filter(Budget.id == budget_id).first()
-#     if not budget:
-#         raise NotFoundException({"message": "Budget not found", "code": 404})
-#     return budget
+    Raises:
+        HTTPException: If the budget is not found (404) or the user is not authorized (403).
+    """
+    budget = db.query(Budget).filter(Budget.id == budget_id).first()
+    if not budget:
+        raise NotFoundException({"message": "Budget not found", "code": 404})
+    if budget.user_id != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this budget",
+        )
+    return budget
+
 
 # @router.patch(
 #     "/budgets/{budget_id}",
@@ -294,11 +404,11 @@ async def get_budgets(db: Session = Depends(get_db)):
 #     """
 #     budget = db.query.Budget.filter(Budget.id == budget_id).first()
 #     if not budget:
-#         raise NotFoundException({"message": "Budget not found", "code": 404})   
+#         raise NotFoundException({"message": "Budget not found", "code": 404})
 
-    
+
 #     budget.name = budget_in.name
 #     budget.amount = budget_in.amount
 #     db.commit()
-#     db.refresh(budget)     
+#     db.refresh(budget)
 #     return budget
