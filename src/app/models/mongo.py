@@ -6,6 +6,11 @@ This module defines the Expense document model used with Beanie ODM for MongoDB.
 from beanie import Document, Link
 from pydantic import Field
 
+class Income(Document):
+    amount: int = Field(..., description="Income amount")
+    
+    class Settings:
+        name = "income"
 
 class Category(Document):
     """

@@ -1,13 +1,51 @@
 from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status
 
-from src.app.models.mongo import Budget, Category, Expense
-from src.app.schema.mongodb import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn, ExpenseOut
+from src.app.models.mongo import Budget, Category, Expense, Income
+from src.app.schema.mongodb import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn, ExpenseOut, IncomeIn, IncomeOut
 from src.app.exceptions import NotFoundException
 
 router = APIRouter(prefix="/api/v1/mongo")
 
+@router.get(
+    "/income/{income_id}",
+    name="get_income",
+    tags = ["income"],
+    status_code=status.HTTP_200_OK,
+    response_model=IncomeOut,
+    response_description="The created income",
+    summary="Get the income",
+    description="Retrieve the created income"
+)
 
+async def get_income(income_id: PydanticObjectId):
+    income = await Income.get(income_id, fetch_links = True)
+    if not income:
+        raise NotFoundException({"message": "Expense not found", "code": 404})
+    return income
+
+@router.post(
+    "/income",
+    name="create_income",
+    tags=["income"],
+    status_code=status.HTTP_201_CREATED,
+    response_model=IncomeOut,
+    summary="Create a new income",
+    description="Create and store a new income in the database."
+)
+async def create_income(income_in: IncomeIn):
+    """
+    Create a new income.
+
+    Args:
+        income (IncomeIn): The income data to create.
+
+    Returns:
+        Budget: The created income object.
+    """
+    income = Income(**income_in.model_dump())
+    await income.insert()
+    return income
 
 @router.get(
     "/expenses",

@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
 
-from src.app.models.mongo import Budget, Category, Expense
+from src.app.models.mongo import Budget, Category, Expense, Income
 
 # Load environment variables from .env file
 load_dotenv()  # Loads variables from .env into environment
@@ -20,7 +20,14 @@ MONGO_URL = os.getenv("MONGO_URL")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME")
 
+# Validate required environment variables
+if not MONGO_URL:
+    raise ValueError("MONGO_URL environment variable is required")
+if not MONGO_DB_NAME:
+    raise ValueError("MONGO_DB_NAME environment variable is required")
+
 # Initialize MongoDB client and database references
+
 client = AsyncIOMotorClient(MONGO_URL)
 database = client[MONGO_DB_NAME]
 # expenses_collection = database[MONGO_COLLECTION_NAME]
@@ -37,5 +44,7 @@ async def init_db():
     with the Expense document model. It should be called during application startup.
     """
     logger.info("Initializing database connection...")
-    await init_beanie(database=database, document_models=[Expense,Category,Budget])
+    await init_beanie(
+        database=database, document_models=[Expense, Category, Budget, Income]
+    )
     logger.info("Database initialized successfully.")

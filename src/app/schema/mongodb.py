@@ -7,6 +7,16 @@ from typing import Optional
 from beanie import PydanticObjectId
 from pydantic import BaseModel, Field
 
+class IncomeIn(BaseModel):
+    amount: int = Field(..., description="income amount")
+    class Config:
+        populate_by_name = True
+        
+class IncomeOut(BaseModel):
+    id: PydanticObjectId
+    amount: int = Field(..., description="income amount")
+    class Config:
+        validate_by_name = True
 
 class ExpenseIn(BaseModel):
     """
