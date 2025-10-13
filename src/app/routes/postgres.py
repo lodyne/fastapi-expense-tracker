@@ -29,8 +29,10 @@ def get_db():
     finally:
         db.close()
 
+
 # Convenience alias for annotating the database dependency in route signatures.
 db_dependency = Annotated[Session, Depends(get_db)]
+
 
 @router.post(
     "/auth/token",
@@ -263,12 +265,13 @@ async def get_categories(
     categories = db.query(Category).all()
     return categories
 
+
 @router.get(
     "/categories/{category_id}",
     name="get_category",
     tags=["categories - postgres"],
     status_code=status.HTTP_200_OK,
-    response_model=list[CategoryOut],
+    response_model=CategoryOut,
     summary="Get specific category",
     description="Retrieve a specific category stored in the database.",
 )
