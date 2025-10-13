@@ -45,7 +45,6 @@ class CategoryIn(BaseModel):
     Attributes:
         name (str): Name of the category.
     """
-    id: PydanticObjectId = Field(..., alias="_id")
     name: str = Field(..., description="Name of the category")
     
     class Config:
@@ -60,7 +59,6 @@ class BudgetIn(BaseModel):
         amount (float): Total amount allocated for the budget.
     """
     
-    id: PydanticObjectId = Field(..., alias="_id")
     name: str = Field(..., description="Name of the budget")
     amount: float = Field(..., description="Total amount allocated for the budget")
 

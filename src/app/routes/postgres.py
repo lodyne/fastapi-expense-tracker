@@ -35,7 +35,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.post(
     "/auth/token",
     name="login_access_token",
-    tags=["auth"],
+    tags=["auth - postgres"],
     summary="Obtain an access token",
     description="Authenticate with username and password to receive a JWT access token.",
 )
@@ -56,7 +56,7 @@ async def login_for_access_token(
 @router.get(
     "/expenses",
     name="get_expenses",
-    tags=["expenses"],
+    tags=["expenses - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=list[ExpenseOut],
     response_description="List of all expenses",
@@ -81,7 +81,7 @@ async def get_expenses(
 @router.get(
     "/expenses/{expense_id}",
     name="get_expense",
-    tags=["expenses"],
+    tags=["expenses - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=ExpenseOut,
     summary="Get a specific expense",
@@ -113,7 +113,7 @@ async def get_expense(
 @router.post(
     "/expenses",
     name="create_expense",
-    tags=["expenses"],
+    tags=["expenses - postgres"],
     status_code=status.HTTP_201_CREATED,
     response_model=ExpenseOut,
     summary="Create a new expense",
@@ -143,7 +143,7 @@ async def create_expense(
 @router.delete(
     "/expenses/{expense_id}",
     name="delete_expense",
-    tags=["expenses"],
+    tags=["expenses - postgres"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an expense",
     description="Delete a specific expense by its unique ID.",
@@ -212,7 +212,7 @@ async def delete_expense(
 @router.post(
     "/categories",
     name="create_category",
-    tags=["categories"],
+    tags=["categories - postgres"],
     status_code=status.HTTP_201_CREATED,
     response_model=CategoryOut,
     summary="Create a new category",
@@ -244,7 +244,7 @@ async def create_category(
 @router.get(
     "/categories",
     name="get_categories",
-    tags=["categories"],
+    tags=["categories - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=list[CategoryOut],
     summary="Get all categories",
@@ -266,7 +266,7 @@ async def get_categories(
 @router.get(
     "/categories/{category_id}",
     name="get_category",
-    tags=["categories"],
+    tags=["categories - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=list[CategoryOut],
     summary="Get specific category",
@@ -292,7 +292,7 @@ async def get_category(
 @router.post(
     "/budgets",
     name="create_budget",
-    tags=["budgets"],
+    tags=["budgets - postgres"],
     status_code=status.HTTP_201_CREATED,
     response_model=BudgetOut,
     summary="Create a new budget",
@@ -322,7 +322,7 @@ async def create_budget(
 @router.get(
     "/budgets",
     name="get_budgets",
-    tags=["budgets"],
+    tags=["budgets - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=list[BudgetOut],
     summary="Get all budgets",
@@ -345,7 +345,7 @@ async def get_budgets(
 @router.get(
     "/budgets/{budget_id}",
     name="get_budget",
-    tags=["budgets"],
+    tags=["budgets - postgres"],
     status_code=status.HTTP_200_OK,
     response_model=BudgetOut,
     summary="Get a specific budget",

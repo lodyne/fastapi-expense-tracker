@@ -2,7 +2,7 @@ from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status
 
 from src.app.models.mongo import Budget, Category, Expense, Income
-from src.app.schema.mongodb import BudgetIn, BudgetOut, CategoriesOut, CategoryIn, CategoryOut, ExpenseIn, ExpenseOut, IncomeIn, IncomeOut
+from src.app.schema.mongodb import BudgetIn, BudgetOut, CategoryIn, CategoryOut, ExpenseIn, ExpenseOut, IncomeIn, IncomeOut
 from src.app.exceptions import NotFoundException
 
 router = APIRouter(prefix="/api/v1/mongo")
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/v1/mongo")
 @router.get(
     "/income/{income_id}",
     name="get_income",
-    tags = ["income"],
+    tags = ["income - mongo"],
     status_code=status.HTTP_200_OK,
     response_model=IncomeOut,
     response_description="The created income",
@@ -27,7 +27,7 @@ async def get_income(income_id: PydanticObjectId):
 @router.post(
     "/income",
     name="create_income",
-    tags=["income"],
+    tags=["income - mongo"],
     status_code=status.HTTP_201_CREATED,
     response_model=IncomeOut,
     summary="Create a new income",
@@ -50,14 +50,14 @@ async def create_income(income_in: IncomeIn):
 @router.get(
     "/expenses",
     name="get_expenses",
-    tags=["expenses"],
+    tags=["expenses - mongo"],
     status_code=status.HTTP_200_OK,
-    response_model=list[Expense], 
+    response_model=list[ExpenseOut], 
     response_description="List of all expenses",
     summary="Get all expenses",
     description="Retrieve a list of all expenses stored in the database.",
 )
-async def get_expenses() -> list[Expense]:
+async def get_expenses():
     """
     Retrieve all expenses.
 
@@ -72,9 +72,9 @@ async def get_expenses() -> list[Expense]:
 @router.get(
     "/expenses/{expense_id}",
     name="get_expense",
-    tags=["expenses"],
+    tags=["expenses - mongo"],
     status_code=status.HTTP_200_OK,
-    response_model=Expense,
+    response_model=ExpenseOut,
     summary="Get a specific expense",
     description="Retrieve a specific expense by its unique ID.",
 )
@@ -100,7 +100,7 @@ async def get_expense(expense_id: PydanticObjectId):
 @router.post(
     "/expenses",
     name="create_expense",
-    tags=["expenses"],
+    tags=["expenses - mongo"],
     status_code=status.HTTP_201_CREATED,
     response_model=ExpenseOut,
     summary="Create a new expense",
@@ -143,7 +143,7 @@ async def create_expense(expense_in: ExpenseIn):
 @router.delete(
     "/expenses/{expense_id}",
     name="delete_expense",
-    tags=["expenses"],
+    tags=["expenses - mongo"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an expense",
     description="Delete a specific expense by its unique ID."
@@ -166,7 +166,7 @@ async def delete_expense(expense_id: PydanticObjectId):
 @router.patch(
     "/expenses/{expense_id}",
     name="update_expense",
-    tags=["expenses"],
+    tags=["expenses - mongo"],
     status_code=status.HTTP_200_OK,
     response_model=Expense,
     summary="Update an expense",
@@ -198,7 +198,7 @@ async def update_expense(expense_id: PydanticObjectId, expense_in: ExpenseIn):
 @router.post(
     "/categories",
     name="create_category",
-    tags=["categories"],
+    tags=["categories - mongo"],
     status_code=status.HTTP_201_CREATED,
     response_model=CategoryOut,
     summary="Create a new category",
@@ -221,9 +221,9 @@ async def create_category(category_in: CategoryIn):
 @router.get(
     "/categories",
     name="get_categories",
-    tags=["categories"],
+    tags=["categories - mongo"],
     status_code=status.HTTP_200_OK,
-    response_model=CategoriesOut,
+    response_model=list[CategoryOut],
     summary="Get all categories",
     description="Retrieve a list of all categories stored in the database."
 )
@@ -235,15 +235,32 @@ async def get_categories():
         List[Category]: A list of all category objects.
     """
     categories = await Category.find_all().to_list()
-    return {"categories":categories}
+    return categories
+
+
+@router.get(
+    "/categories/{category_id}",
+    name="get_category",
+    tags = ["categories - mongo"],
+    status_code=status.HTTP_200_OK,
+    response_model=CategoryOut,
+    response_description="The specific category",
+    summary="Get the category",
+    description="Retrieve the specific category"
+)
+async def get_category(category_id: PydanticObjectId):
+    category = await Category.get(category_id)
+    if not category:
+        raise NotFoundException({"message": "Category not found", "code": 404})
+    return category
 
 
 @router.post(
     "/budgets",
     name="create_budget",
-    tags=["budgets"],
+    tags=["budgets - mongo"],
     status_code=status.HTTP_201_CREATED,
-    response_model=Budget,
+    response_model=BudgetOut,
     summary="Create a new budget",
     description="Create and store a new budget in the database."
 )
@@ -264,7 +281,7 @@ async def create_budget(budget_in: BudgetIn):
 @router.get(
     "/budgets",
     name="get_budgets",
-    tags=["budgets"],
+    tags=["budgets - mongo"],
     status_code=status.HTTP_200_OK,
     response_model=list[BudgetOut],
     summary="Get all budgets",
@@ -283,7 +300,7 @@ async def get_budgets():
 @router.get(
     "/budgets/{budget_id}",
     name="get_budget",
-    tags=["budgets"],
+    tags=["budgets - mongo"],
     status_code=status.HTTP_200_OK,
     response_model=BudgetOut,
     summary="Get a specific budget",
@@ -311,9 +328,9 @@ async def get_budget(budget_id: PydanticObjectId):
 @router.patch(
     "/budgets/{budget_id}",
     name="update_budget",
-    tags=["budgets"],
+    tags=["budgets - mongo"],
     status_code=status.HTTP_200_OK,
-    response_model=Budget,
+    response_model=BudgetOut,
     summary="Update a budget",
     description="Update an existing budget by its unique ID."
 )
