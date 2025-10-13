@@ -8,6 +8,31 @@ from src.app.exceptions import NotFoundException
 router = APIRouter(prefix="/api/v1/mongo")
 
 @router.get(
+    "/incomes",
+    name="get_income",
+    tags = ["income - mongo"],
+    status_code=status.HTTP_200_OK,
+    response_model=list[IncomeOut],
+    response_description="List of all incomes",
+    summary="Get all incomes",
+    description="Retrieve a list of all incomes stored in the database.",
+)
+async def get_incomes() -> list[IncomeOut]:
+    """
+    Retrieve all incomes.
+
+    Args:
+        income (IncomeOut): The income data retrived.
+
+    Returns:
+        list[IncomeOut]: The retieved income object.
+    """
+
+    incomes = await Income.find_all(fetch_links = True).to_list()
+    return incomes
+
+
+@router.get(
     "/income/{income_id}",
     name="get_income",
     tags = ["income - mongo"],
@@ -19,6 +44,18 @@ router = APIRouter(prefix="/api/v1/mongo")
 )
 
 async def get_income(income_id: PydanticObjectId):
+    """
+    Retrieve single income
+
+    Args:
+        income_id (PydanticObjectId): _description_
+
+    Raises:
+        NotFoundException: _description_
+
+    Returns:
+        _type_: _description_
+    """
     income = await Income.get(income_id, fetch_links = True)
     if not income:
         raise NotFoundException({"message": "Expense not found", "code": 404})
