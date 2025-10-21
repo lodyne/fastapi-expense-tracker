@@ -178,37 +178,53 @@ async def delete_expense(
     db.commit()
 
 
-# @router.patch(
-#     "/expenses/{expense_id}",
-#     name="update_expense",
-#     tags=["expenses"],
-#     status_code=status.HTTP_200_OK,
-#     response_model=Expense,
-#     summary="Update an expense",
-#     description="Update an existing expense by its unique ID."
-# )
-# async def update_expense(expense_id: id, expense_in: ExpenseIn, db: Session = Depends(get_db)):
-#     """
-#     Update an existing expense by ID.
-#     Args:
-#         expense_id (id): The unique identifier of the expense.
-#         expense_in (ExpenseIn): The updated expense data.
-#     Returns:
-#         Expense: The updated expense object.
-#     Raises:
-#         HTTPException: If the expense is not found (404).
-#     """
-#     expense = db.query.Expense.filter(Expense.id == expense_id).first()
-#     if not expense:
-#         raise NotFoundException({"message": "Expense not found", "code": 404})
+@router.patch(
+    "/expenses/{expense_id}",
+    name="update_expense",
+    tags=["expenses - postgres"],
+    status_code=status.HTTP_200_OK,
+    response_model=ExpenseOut,
+    summary="Update an expense",
+    description="Update an existing expense by its unique ID.",
+)
+async def update_expense(
+    expense_id: int,
+    expense_in: ExpenseIn,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Update an existing expense by ID.
+    Args:
+        expense_id (id): The unique identifier of the expense.
+        expense_in (ExpenseIn): The updated expense data.
+    Returns:
+        Expense: The updated expense object.
+    Raises:
+        HTTPException: If the expense is not found (404).
+    """
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        raise NotFoundException({"message": "Expense not found", "code": 404})
 
-#     expense.name = expense_in.name
-#     expense.amount = expense_in.amount
-#     expense.category_id = expense_in.category
-#     expense.budget_id = expense_in.budget
-#     db.commit()
-#     db.refresh(expense)
-#     return expense
+    # Update fields from the input schema. ExpenseIn uses category_id and budget_id
+    expense.name = expense_in.name
+    expense.amount = expense_in.amount
+    # Some clients may omit category_id or budget_id, so handle that defensively
+    try:
+        expense.category_id = expense_in.category_id
+    except AttributeError:
+        # if ExpenseIn doesn't include category_id, skip assignment
+        pass
+
+    try:
+        expense.budget_id = expense_in.budget_id
+    except AttributeError:
+        pass
+
+    db.commit()
+    db.refresh(expense)
+    return expense
 
 
 @router.post(

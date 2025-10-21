@@ -19,8 +19,8 @@ class ExpenseIn(BaseModel):
 
     name: str = Field(..., description="Name of the expense")
     amount: float = Field(..., description="Amount of the expense")
-    category_id: Optional[int] = None
-    budget_id: Optional[int] = None
+    category_id: int = Field(..., description="The id of the category")
+    budget_id: int = Field(..., description="The id of the budget")
 
 
 class CategoryIn(BaseModel):
@@ -55,7 +55,7 @@ class CategoryOut(BaseModel):
         name (str): Name of the category.
     """
 
-    id: int
+    id: int 
     name: str
 
     class Config:
