@@ -5,22 +5,22 @@ lifespan for database initialization, and includes the API routes.
 """
 
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from src.app.database.mongo import init_db
-from src.app.routes.mongo import router as mongo_router
+# from contextlib import asynccontextmanager
+# from src.app.database.mongo import init_db
+# from src.app.routes.mongo import router as mongo_router
 from src.app.routes.postgres import router as postgres_router
 
 from src.app.utils import cors_config
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Application lifespan context manager.
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     """
+#     Application lifespan context manager.
 
-    Initializes the database connection when the application starts.
-    """
-    await init_db()
-    yield
+#     Initializes the database connection when the application starts.
+#     """
+#     await init_db()
+#     yield
 
 
 app = FastAPI(
@@ -34,7 +34,7 @@ app = FastAPI(
     #     {"name": "categories", "description": "Operations related to categories"},
     #     {"name": "budgets", "description": "Operations related to budgets"},
     # ],
-    lifespan=lifespan,
+    # lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -56,5 +56,5 @@ async def root():
     return {"message": "Hello, World!"}
 
 
-app.include_router(mongo_router)
+# app.include_router(mongo_router)
 app.include_router(postgres_router)
