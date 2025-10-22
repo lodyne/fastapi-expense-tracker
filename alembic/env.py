@@ -141,12 +141,22 @@ def _build_url_from_components() -> str:
     return f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
 
+def _should_force_ssl() -> bool:
+    """Render needs SSL; allow FORCE_DB_SSL override for other environments."""
+    if os.getenv("RENDER") == "true":
+        return True
+    override = os.getenv("FORCE_DB_SSL")
+    if override is not None:
+        return override == "1"
+    return False
+
+
 def _get_database_url() -> str:
     # Prefer DATABASE_URL (Render). Fallback to components for local dev.
     db_url = os.getenv("DATABASE_URL") or _build_url_from_components()
 
-    # Enforce SSL on Render or when FORCE_DB_SSL=1 (default)
-    if os.getenv("RENDER") == "true" or os.getenv("FORCE_DB_SSL", "1") == "1":
+    # Enforce SSL on Render or when FORCE_DB_SSL=1 explicitly
+    if _should_force_ssl():
         db_url = _ensure_sslmode(db_url)
 
     return db_url
