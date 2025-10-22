@@ -1,11 +1,11 @@
 # Expense Tracker API
 
-A FastAPI-based backend for tracking expenses and managing budgets, using MongoDB (Beanie ODM) for data storage.
+A FastAPI-based backend for tracking expenses and managing budgets, using PostgreSQL for data storage (SQLAlchemy + Alembic migrations).
 
 ## Features
 
 - Create, retrieve, and manage expenses
-- MongoDB backend with Beanie ODM
+- PostgreSQL backend using SQLAlchemy (async or sync) with Alembic for migrations
 - Pydantic models for validation
 - OpenAPI docs (`/docs`) and ReDoc (`/redoc`)
 - Environment-based configuration
@@ -14,12 +14,13 @@ A FastAPI-based backend for tracking expenses and managing budgets, using MongoD
 
 ```text
 fastapi-expense-tracker/
+├── alembic/            # DB migrations (Alembic)
 ├── src/
 │   ├── app/
-│   │   ├── database.py
-│   │   ├── models.py
-│   │   ├── routes.py
-│   │   └── schema.py
+│   │   ├── database/   # DB connection & repository code
+│   │   ├── models/     # SQLAlchemy models
+│   │   ├── routes/     # FastAPI routes
+│   │   └── schema/     # Pydantic schemas
 │   └── main.py
 ├── .env
 ├── .gitignore
@@ -50,21 +51,40 @@ fastapi-expense-tracker/
 
 4. **Configure environment variables:**
 
-   Create a `.env` file in the project root:
+   Create a `.env` file in the project root. The project reads a DATABASE_URL-style variable. Example:
 
    ```env
-   MONGO_URL=db_url
-   MONGO_DB_NAME=db_name
-   MONGO_COLLECTION_NAME=db_collection_name
+   # Recommended format (SQLAlchemy/Databases/asyncpg compatible)
+   DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/expenses_db
+
+   # Or when using sync drivers (psycopg2)
+   # DATABASE_URL=postgresql://user:password@localhost:5432/expenses_db
    ```
 
-5. **Run MongoDB locally** (if not already running):
+5. **Run PostgreSQL locally** (if not already running):
+
+   Option A — using Docker (recommended for development):
 
    ```bash
-   mongod
+   docker run --rm -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -e POSTGRES_DB=expenses_db -p 5432:5432 postgres:15
    ```
 
-6. **Run the API:**
+   Option B — using a local Postgres service (Homebrew on macOS):
+
+   ```bash
+   brew services start postgresql
+   createdb expenses_db
+   ```
+
+6. **Run database migrations (Alembic):**
+
+   If you've changed models, run:
+
+   ```bash
+   alembic upgrade head
+   ```
+
+7. **Run the API:**
 
    ```bash
    # If main.py is in src/, use:

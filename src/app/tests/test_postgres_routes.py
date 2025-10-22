@@ -2,8 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
-from src.app.routes.postgres import get_db
-from src.app.database.postgres import Base, engine, SessionLocal
+from src.app.routes.expense import get_db
+from src.app.database.expense import Base, engine, SessionLocal
 
 
 @pytest.fixture(scope="session", autouse=True)

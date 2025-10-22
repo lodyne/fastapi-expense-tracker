@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, Numeric, String
 
 from sqlalchemy.orm import relationship
-from src.app.database.postgres import Base, engine
+from src.app.database.expense import Base, engine
 
 
 def create_tables():

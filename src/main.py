@@ -8,7 +8,7 @@ from fastapi import FastAPI
 # from contextlib import asynccontextmanager
 # from src.app.database.mongo import init_db
 # from src.app.routes.mongo import router as mongo_router
-from src.app.routes.postgres import router as postgres_router
+from src.app.routes.expense import router as postgres_router
 
 from src.app.utils import cors_config
 

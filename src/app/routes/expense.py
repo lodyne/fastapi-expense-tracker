@@ -2,9 +2,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from src.app.database.postgres import SessionLocal
-from src.app.models.postgres import Budget, Category, Expense
-from src.app.schema.postgres import (
+from src.app.database.expense import SessionLocal
+from src.app.models.expense import Budget, Category, Expense
+from src.app.schema.expense import (
     BudgetIn,
     BudgetOut,
     CategoryOut,

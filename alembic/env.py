@@ -98,8 +98,8 @@ from sqlalchemy import engine_from_config, pool
 from dotenv import load_dotenv
 
 # Import models so Alembic sees them
-from src.app.models import postgres as postgres_models  # noqa: F401
-from src.app.database.postgres import Base  # only Base, not POSTGRES_URL
+from src.app.models import expense as postgres_models  # noqa: F401
+from src.app.database.expense import Base  # only Base, not POSTGRES_URL
 
 # ----- Setup logging -----
 config = context.config
