@@ -1,7 +1,7 @@
 """change amount columns to numeric
 
 Revision ID: 587010e524d5
-Revises: 
+Revises: 1b9f3d0f2a6c
 Create Date: 2025-10-02 12:44:16.983854
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '587010e524d5'
-down_revision: Union[str, Sequence[str], None] = None
+down_revision: Union[str, Sequence[str], None] = '1b9f3d0f2a6c'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
