@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build:
@@ -9,11 +7,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-default_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB:-expense_tracker}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_SERVICE_HOST: postgres
       FORCE_DB_SSL: "0"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
@@ -24,14 +23,23 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
   postgres:
     image: postgres:15
     container_name: expense-tracker-db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-default_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB:-expense_tracker}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-default_user} -d ${POSTGRES_DB:-expense_tracker}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     ports:
       - "5432:5432"
     volumes:

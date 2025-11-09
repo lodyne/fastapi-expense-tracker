@@ -18,9 +18,22 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
-# Define environment variables
-ENV PYTHONUNBUFFERED=1
+# Default runtime configuration (override via --build-arg or docker run -e)
+ARG POSTGRES_USER=lodyne
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_HOST=localhost
+ARG POSTGRES_PORT=5432
+ARG POSTGRES_DB=expense_tracker
+ARG POSTGRES_SERVICE_HOST=postgres
+
+ENV PYTHONUNBUFFERED=1 \
+    POSTGRES_USER=${POSTGRES_USER} \
+    POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+    POSTGRES_HOST=${POSTGRES_HOST} \
+    POSTGRES_PORT=${POSTGRES_PORT} \
+    POSTGRES_DB=${POSTGRES_DB} \
+    POSTGRES_SERVICE_HOST=${POSTGRES_SERVICE_HOST} \
+    DOCKERIZED=1
 
 # Run the application
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
