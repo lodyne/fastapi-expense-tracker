@@ -18,8 +18,13 @@ from src.app.security.auth import (
     create_token_for_user,
     get_current_user,
 )
+from src.app.services import (
+    budget_services,
+    category_service,
+    expense_services,
+)
 
-router = APIRouter(prefix="/api/v1/postgres")
+router = APIRouter(prefix="/api/v1")
 
 
 def get_db():
@@ -37,7 +42,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.post(
     "/auth/token",
     name="login_access_token",
-    tags=["auth - postgres"],
+    tags=["auth"],
     summary="Obtain an access token",
     description="Authenticate with username and password to receive a JWT access token.",
 )
@@ -58,7 +63,7 @@ async def login_for_access_token(
 @router.get(
     "/expenses",
     name="get_expenses",
-    tags=["expenses - postgres"],
+    tags=["expenses"],
     status_code=status.HTTP_200_OK,
     response_model=list[ExpenseOut],
     response_description="List of all expenses",
@@ -75,15 +80,14 @@ async def get_expenses(
     Returns:
         List[Expense]: A list of all expense objects.
     """
-    expenses = db.query(Expense).all()
-
+    expenses = expense_services.get_all_expenses(db)
     return expenses
 
 
 @router.get(
     "/expenses/{expense_id}",
     name="get_expense",
-    tags=["expenses - postgres"],
+    tags=["expenses"],
     status_code=status.HTTP_200_OK,
     response_model=ExpenseOut,
     summary="Get a specific expense",
@@ -102,20 +106,16 @@ async def get_expense(
 
     Returns:
         Expense: The expense object if found.
-
-    Raises:
-        HTTPException: If the expense is not found (404).
     """
-    expense = db.query(Expense).filter(Expense.id == expense_id).first()
-    if not expense:
-        raise NotFoundException({"message": "Expense not found", "code": 404})
+    expense = expense_services.get_specific_expense(db, expense_id)
+
     return expense
 
 
 @router.post(
     "/expenses",
     name="create_expense",
-    tags=["expenses - postgres"],
+    tags=["expenses"],
     status_code=status.HTTP_201_CREATED,
     response_model=ExpenseOut,
     summary="Create a new expense",
@@ -136,16 +136,14 @@ async def create_expense(
         Expense: The created expense object.
     """
     expense = Expense(**expense_in.model_dump())
-    db.add(expense)
-    db.commit()
-    db.refresh(expense)
+    expense = expense_services.create_expense(expense, db)
     return expense
 
 
 @router.delete(
     "/expenses/{expense_id}",
     name="delete_expense",
-    tags=["expenses - postgres"],
+    tags=["expenses"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an expense",
     description="Delete a specific expense by its unique ID.",
@@ -168,12 +166,6 @@ async def delete_expense(
     if not expense:
         raise NotFoundException({"message": "Expense not found", "code": 404})
 
-    if expense.user_id != current_user["id"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this expense",
-        )
-
     db.delete(expense)
     db.commit()
 
@@ -181,7 +173,7 @@ async def delete_expense(
 @router.patch(
     "/expenses/{expense_id}",
     name="update_expense",
-    tags=["expenses - postgres"],
+    tags=["expenses"],
     status_code=status.HTTP_200_OK,
     response_model=ExpenseOut,
     summary="Update an expense",
@@ -230,7 +222,7 @@ async def update_expense(
 @router.post(
     "/categories",
     name="create_category",
-    tags=["categories - postgres"],
+    tags=["categories"],
     status_code=status.HTTP_201_CREATED,
     response_model=CategoryOut,
     summary="Create a new category",
@@ -253,16 +245,14 @@ async def create_category(
     """
 
     category = Category(**category_in.model_dump())
-    db.add(category)
-    db.commit()
-    db.refresh(category)
+    category = category_service.create_category(category, db)
     return category
 
 
 @router.get(
     "/categories",
     name="get_categories",
-    tags=["categories - postgres"],
+    tags=["categories"],
     status_code=status.HTTP_200_OK,
     response_model=list[CategoryOut],
     summary="Get all categories",
@@ -278,14 +268,14 @@ async def get_categories(
     Returns:
         List[Category]: A list of all category objects.
     """
-    categories = db.query(Category).all()
+    categories = category_service.get_all_categories(db)
     return categories
 
 
 @router.get(
     "/categories/{category_id}",
     name="get_category",
-    tags=["categories - postgres"],
+    tags=["categories"],
     status_code=status.HTTP_200_OK,
     response_model=CategoryOut,
     summary="Get specific category",
@@ -302,16 +292,14 @@ async def get_category(
     Returns:
         Category: A list of all category objects.
     """
-    category = db.query(Category).filter(Category.id == category_id).first()
-    if not category:
-        raise NotFoundException({"message": "Category not found", "code": 404})
+    category = category_service.get_specific_category(category_id,db)
     return category
 
 
 @router.post(
     "/budgets",
     name="create_budget",
-    tags=["budgets - postgres"],
+    tags=["budgets"],
     status_code=status.HTTP_201_CREATED,
     response_model=BudgetOut,
     summary="Create a new budget",
@@ -332,16 +320,14 @@ async def create_budget(
         Budget: The created budget object.
     """
     budget = Budget(**budget_in.model_dump())
-    db.add(budget)
-    db.commit()
-    db.refresh(budget)
+    budget = budget_services.create_budget(budget, db)
     return budget
 
 
 @router.get(
     "/budgets",
     name="get_budgets",
-    tags=["budgets - postgres"],
+    tags=["budgets"],
     status_code=status.HTTP_200_OK,
     response_model=list[BudgetOut],
     summary="Get all budgets",
@@ -357,14 +343,14 @@ async def get_budgets(
     Returns:
         List[Budget]: A list of all budget objects.
     """
-    budgets = db.query(Budget).all()
+    budgets = budget_services.get_all_budgets(db)
     return budgets
 
 
 @router.get(
     "/budgets/{budget_id}",
     name="get_budget",
-    tags=["budgets - postgres"],
+    tags=["budgets"],
     status_code=status.HTTP_200_OK,
     response_model=BudgetOut,
     summary="Get a specific budget",
@@ -387,9 +373,7 @@ async def get_budget(
     Raises:
         HTTPException: If the budget is not found (404) or the user is not authorized (403).
     """
-    budget = db.query(Budget).filter(Budget.id == budget_id).first()
-    if not budget:
-        raise NotFoundException({"message": "Budget not found", "code": 404})
+    budget = budget_services.get_specific_budget(db, budget_id)
     return budget
 
 

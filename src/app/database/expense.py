@@ -68,17 +68,34 @@ def _ensure_sslmode(url: str) -> str:
         return urlunsplit(parts)
     return url
 
+def _clean_env(value: str | None) -> str | None:
+    """Trim whitespace and surrounding quotes from env values."""
+    if value is None:
+        return None
+    return value.strip().strip('"').strip("'")
+
+
 def _build_url_from_components() -> str:
-    required_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
+    required_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"]
     missing = [v for v in required_vars if os.getenv(v) is None]
     if missing:
         raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
 
-    user = os.getenv("POSTGRES_USER")
-    password = os.getenv("POSTGRES_PASSWORD", "")
-    host = os.getenv("POSTGRES_HOST")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    db   = os.getenv("POSTGRES_DB")
+    user = _clean_env(os.getenv("POSTGRES_USER"))
+    password = _clean_env(os.getenv("POSTGRES_PASSWORD", ""))
+    host = _clean_env(os.getenv("POSTGRES_HOST"))
+    port = _clean_env(os.getenv("POSTGRES_PORT"))
+
+    if os.getenv("DOCKERIZED") == "1" and host in {None, "", "localhost", "127.0.0.1"}:
+        host = _clean_env(os.getenv("POSTGRES_SERVICE_HOST", "postgres"))
+
+    if not host:
+        raise ValueError("Missing required environment variable: POSTGRES_HOST")
+
+    if not port:
+        port = "5432"
+
+    db = _clean_env(os.getenv("POSTGRES_DB"))
 
     return f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
