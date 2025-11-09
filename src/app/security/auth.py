@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from .jwt import create_access_token, decode_access_token
 
 
-OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/api/v1/postgres/auth/token")
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 def _credentials() -> tuple[str, str]:
