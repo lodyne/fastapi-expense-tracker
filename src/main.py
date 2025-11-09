@@ -18,12 +18,6 @@ app = FastAPI(
     version="1.0.0",
     contact={"name": "Lodger Mtui", "email": "lodgmtui@gmail.com"},
     license_info={"name": "MIT License", "url": "https://opensource.org/license/mit/"},
-    # openapi_tags=[
-    #     {"name": "expenses", "description": "Operations related to expenses"},
-    #     {"name": "categories", "description": "Operations related to categories"},
-    #     {"name": "budgets", "description": "Operations related to budgets"},
-    # ],
-    # lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
